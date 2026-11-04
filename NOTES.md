@@ -13,9 +13,13 @@ Basically it shows relation between words, `man - king + woman = queen`
 # Output
 ## Softmax
 Convert raw final outputs (logits) of a neural network into probabiliites
-$$\sigma (\mathbf{z})_{i}=\frac{e^{z_{i}}}{\sum _{j=1}^{K}e^{z_{j}}}$$
+
+$$
+\sigma (\mathbf{z})_{i}=\frac{e^{z_{i}}}{\sum _{j=1}^{K}e^{z_{j}}}
+$$
+
 Breakdown:
-- $\sigma(\mathbf{z})_i $ : The output probability for the i-th class. All outputs range between 0 and 1, and they sum up to exactly 1
+- $\sigma(\mathbf{z})_i$ : The output probability for the i-th class. All outputs range between 0 and 1, and they sum up to exactly 1
 - $z_{i}$ : The input score (logit) for the i-th class
 - $e^{z_{i}}$ : The exponential function applied to the input score. This turns all negative numbers into positive values and magnifies the differences between scores
 - $\sum_{j=1}^{K} e^{z_j}$ : The normalization term. It sums up the exponential values of all K classes, ensuring that the final output values behave as a valid probability distribution
@@ -24,19 +28,28 @@ Problem: Using integers that are way too big for the data type, i.e $e^{275}$, e
 
 Solution: Stable Softmax, for every xi, we subtract with the maximum xi value in the vector
 Formula:
-$$\sigma (\mathbf{z})_{i}=\frac{e^{z_{i}-\max (\mathbf{z})}}{\sum _{j=1}^{K}e^{z_{j}-\max (\mathbf{z})}}$$
+
+$$
+\sigma (\mathbf{z})_{i}=\frac{e^{z_{i}-\max (\mathbf{z})}}{\sum _{j=1}^{K}e^{z_{j}-\max (\mathbf{z})}}
+$$
 
 ## Cross-Entropy Loss
 Measure how wrong our GPT is
-$$L=-\sum _{c=1}^{K}y_{c}\log (p_{c})$$
+
+$$
+L=-\sum _{c=1}^{K}y_{c}\log (p_{c})
+$$
+
 - $K$ : The total number of classes (or vocabulary size in a language model)
 - $y_{c}$ : A binary indicator (0 or 1) indicating if class $c$ is the correct classification. In practice, this represents a one-hot encoded vector
-- $p_{c} $: The model's predicted probability for class $c$ (the output from the Softmax function).
+- $p_{c}$: The model's predicted probability for class $c$ (the output from the Softmax function).
 
 Problem: Model predicts [0, 0, 0, 1], but in reality, it's supposed to be [0, 0, 1, 0], model does log(0), which gives $-\infty$
 
 Solution:
-$$L=-z_{c}+\max (\mathbf{z})+\log \sum _{j=1}^{K}e^{z_{j}-\max (\mathbf{z})}$$
+$$
+L=-z_{c}+\max (\mathbf{z})+\log \sum _{j=1}^{K}e^{z_{j}-\max (\mathbf{z})}
+$$
 
 By cancelling out the log and exponential: $\log \left(e^{z_{c}-\max (\mathbf{z})}\right)\implies z_{c}-\max (\mathbf{z})$  it never encounters a 0 or a $\log(0)$ error anywhere, no matter how wrong the model is, because now it's just a simple subtraction
 
@@ -62,7 +75,9 @@ To stabilize and accelerate the training of deep neural networks, we use Layer N
 
 Without normalization, layers later in the network constantly have to adapt to shifting distributions of inputs from earlier layers. A problem known as internal covariate shift. LayerNorm fixes this by enforcing a consistent distribution of activations
 
-$$\text{LayerNorm}(x)_{k}=\gamma _{k}\cdot \left(\frac{x_{k}-\mu }{\sqrt{\sigma ^{2}+\epsilon }}\right)+\beta _{k}$$
+$$
+\text{LayerNorm}(x)_{k}=\gamma _{k}\cdot \left(\frac{x_{k}-\mu }{\sqrt{\sigma ^{2}+\epsilon }}\right)+\beta _{k}
+$$
 
 Breakdown:
 - $\gamma_{k}$ : gain (trainable)
