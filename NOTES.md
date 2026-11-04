@@ -47,6 +47,7 @@ $$
 Problem: Model predicts [0, 0, 0, 1], but in reality, it's supposed to be [0, 0, 1, 0], model does log(0), which gives $-\infty$
 
 Solution:
+
 $$
 L=-z_{c}+\max (\mathbf{z})+\log \sum _{j=1}^{K}e^{z_{j}-\max (\mathbf{z})}
 $$
