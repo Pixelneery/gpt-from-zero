@@ -1,4 +1,4 @@
-# What is a gpt?
+# What is a GPT?
 Basically a fancy autocomplete, it predicts the next work in a sentence:
 The cat is _ -> GPT -> The cat is fat
 
@@ -9,6 +9,12 @@ Computers can't understand text, since it's just math inside, that's why we conv
 ## Embedding Layer
 Embedding = Sequence of numbers in a certain dimension
 Basically it shows relation between words, `man - king + woman = queen`
+
+So in here, we turn our tokens into a vector, usually just a random small vector, since it will get it's meaning during training
+
+Two embeddings are added together before anything else happens:
+- Token embedding: a (vocab_size, d_model) table. token_embedding[id] gives us that token's starting vector. Values are random at init; training is what makes them meaningful (the man - king + woman = queen example, it emerges from the loss signal, from training)
+- Position embedding: a (block_size, d_model) table. Attention is order-blind, so without this the model couldn't distinguish "dog bites man" from "man bites dog". Position t always uses row t of this table
 
 # Output
 ## Softmax
