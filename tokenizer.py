@@ -32,7 +32,7 @@ n = int(0.9 * len(data))
 train_data = data[:n]
 val_data = data[n:]
 
-block_size = 8 # The context length of the model
+block_size = 128 # The context length of the model
 batch_size = 4 # How many sequence to process in parallel
 
 def get_batch(split):
@@ -46,7 +46,3 @@ def get_batch(split):
     x = np.stack([data_split[i:i+block_size] for i in ix])
     y = np.stack([data_split[i+1:i+block_size+1] for i in ix])
     return x,y
-
-xb,yb = get_batch('train')
-print(f"Input batch shape: {xb.shape}")
-print(f"Target batch shape: {yb.shape}")
