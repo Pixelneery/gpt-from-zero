@@ -424,50 +424,79 @@ def get_params_grads(gpt):
     ]
     return pg
 
-np.random.seed(0)
+def get_params(gpt):
+    ps = [
+        ("emb.tok", gpt.emb.token_emb.W),
+        ("emb.pos", gpt.emb.pos_emb.W),
+        ("ln_f.g",  gpt.ln_f.gamma),
+        ("ln_f.b",  gpt.ln_f.beta),
+        ("W_out",   gpt.W_out),
+    ]
+    for i, b in enumerate(gpt.blocks):
+        ps += [
+            (f"b{i}.ln1.g",  b.ln1.gamma),
+            (f"b{i}.ln1.b",  b.ln1.beta),
+            (f"b{i}.WQ",     b.attn.WQ),
+            (f"b{i}.WK",     b.attn.WK),
+            (f"b{i}.WV",     b.attn.WV),
+            (f"b{i}.WO",     b.attn.WO),
+            (f"b{i}.ln2.g",  b.ln2.gamma),
+            (f"b{i}.ln2.b",  b.ln2.beta),
+            (f"b{i}.mlp.W1", b.mlp.W1),
+            (f"b{i}.mlp.b1", b.mlp.b1),
+            (f"b{i}.mlp.W2", b.mlp.W2),
+            (f"b{i}.mlp.b2", b.mlp.b2),
+        ]
+    return ps
 
-vocab_size = len(chars)
-block_size = 128
-d_model    = 128
-n_heads    = 4
-n_layers   = 6
+if __name__ == "__main__":
+    import time
 
-gpt = GPT(vocab_size, block_size, d_model, n_heads, n_layers)
-opt = AdamW(lr=3e-4, weight_decay=0.01)
+    np.random.seed(0)
 
-def evaluate(split, n_batches=20):
-    losses = []
-    for _ in range(n_batches):
-        xb, yb = get_batch(split)
-        _, loss = gpt.forward(xb, yb)
-        losses.append(loss)
-    return float(np.mean(losses))
+    vocab_size = len(chars)
+    block_size = 128
+    d_model    = 128
+    n_heads    = 4
+    n_layers   = 6
 
-import time
-t0 = time.time()
+    gpt = GPT(vocab_size, block_size, d_model, n_heads, n_layers)
+    opt = AdamW(lr=3e-4, weight_decay=0.01)
 
-def save_checkpoint(gpt, path):
-    state = {name: p for name, p, _ in get_params_grads(gpt)}
-    np.savez(path, **state)
+    def evaluate(split, n_batches=20):
+        losses = []
+        for _ in range(n_batches):
+            xb, yb = get_batch(split)
+            _, loss = gpt.forward(xb, yb)
+            losses.append(loss)
+        return float(np.mean(losses))
 
-MAX_STEPS = 20000
-for step in range(MAX_STEPS):
-    opt.lr = get_lr(step, MAX_STEPS, base_lr=3e-4, warmup=200)
-    xb, yb = get_batch("train")
-    logits, loss = gpt.forward(xb, yb)
-    _, dlogits = cross_entropy(logits, yb)
-    gpt.backward(dlogits)
-    opt.step(get_params_grads(gpt))
+    def save_checkpoint(model, path):
+        state = {name: p for name, p, _ in get_params_grads(model)}
+        np.savez(path, **state)
 
-    if step % 500 == 0 or step == MAX_STEPS - 1:
-        print(f"step {step:5d} | lr {opt.lr:.2e} | train {loss:.4f} | "
-              f"val {evaluate('val'):.4f} | {time.time()-t0:.0f}s")
+    MAX_STEPS = 20000
+    t0 = time.time()
 
-    if step % 2000 == 0 and step > 0:
-        save_checkpoint(gpt, f"ckpt_{step}.npz")
+    for step in range(MAX_STEPS):
+        opt.lr = get_lr(step, MAX_STEPS, base_lr=3e-4, warmup=200)
+        xb, yb = get_batch("train")
+        logits, loss = gpt.forward(xb, yb)
+        _, dlogits = cross_entropy(logits, yb)
+        gpt.backward(dlogits)
+        opt.step(get_params_grads(gpt))
 
-print("\n" + "=" * 40)
-print("SAMPLE:")
-prompt = np.array([[encode("T")[0]]])
-out = generate(gpt, prompt, max_new_tokens=300, temperature=0.8)
-print(decode(out[0].tolist()))
+        if step % 500 == 0 or step == MAX_STEPS - 1:
+            print(f"step {step:5d} | lr {opt.lr:.2e} | train {loss:.4f} | "
+                  f"val {evaluate('val'):.4f} | {time.time()-t0:.0f}s")
+
+        if step % 2000 == 0 and step > 0:
+            save_checkpoint(gpt, f"ckpt_{step}.npz")
+
+    save_checkpoint(gpt, "ckpt_final.npz")
+
+    print("\n" + "=" * 40)
+    print("SAMPLE:")
+    prompt = np.array([[encode("T")[0]]])
+    out = generate(gpt, prompt, max_new_tokens=300, temperature=0.8)
+    print(decode(out[0].tolist()))
